@@ -50,3 +50,29 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
     dbname   = var.db_name
   })
 }
+
+# Secrets Manager - API Keys
+resource "aws_secretsmanager_secret" "api_keys" {
+  count                   = var.create_api_secret ? 1 : 0
+  name                    = "${var.name_prefix}-api-keys"
+  description             = "API keys for ${var.name_prefix}"
+  kms_key_id              = aws_kms_key.secrets[0].id
+  recovery_window_in_days = 7
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.name_prefix}-api-keys"
+      Type = "api"
+    }
+  )
+}
+
+resource "aws_secretsmanager_secret_version" "api_keys" {
+  count     = var.create_api_secret ? 1 : 0
+  secret_id = aws_secretsmanager_secret.api_keys[0].id
+  secret_string = jsonencode({
+    api_key    = var.api_key
+    api_secret = var.api_secret
+  })
+}
